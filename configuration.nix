@@ -13,18 +13,11 @@
       ./zen.nix
     ];
 
-
-
   virtualisation.virtualbox.host.enable = true;
   users.extraGroups.vboxusers.members = [ "Zahara" ]; # Replace with your actual username
   virtualisation.virtualbox.host.enableExtensionPack = false; # Optional, set to true if you need USB support, etc.
 
   programs.ssh.startAgent = true;
-
-  networking.firewall = {
-    enable = true; # Firewall is enabled by default
-    allowedTCPPorts = [ 80 443 ]; # Allow TCP ports 22 (SSH), 80 (HTTP), and 443 (HTTPS)
-  };
   virtualisation.docker.enable = true;
 
   # Bootloader.
@@ -102,9 +95,8 @@
   # $ nix search wget
 
   fonts.packages = with pkgs; [
-  	nerdfonts
 	noto-fonts
-  ];
+  ] ++ builtins.filter lib.attrsets.isDerivation (builtins.attrValues pkgs.nerd-fonts);
 
   environment.systemPackages = with pkgs; [
      vlc
@@ -116,13 +108,15 @@
      python312
      python312Packages.jupyter-core
 
-     discord
+     vesktop
+     (discord.override {
+       withVencord = true;
+     })
      jetbrains.idea-ultimate
 
      heroic
 
      neovim
-     kitty
      ghostty
      firefox
      nautilus
@@ -146,7 +140,6 @@
      swww # wallpapper
 
      # minecraft modding launcher
-     ferium
      prismlauncher
 
      # apple music
