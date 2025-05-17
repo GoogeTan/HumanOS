@@ -11,6 +11,9 @@
       ./waybar.nix
       ./kuber.nix
       ./zen.nix
+      ./tablet_drivers.nix
+      #./neovim.nix
+      ./emacs.nix
     ];
 
   virtualisation.virtualbox.host.enable = true;
@@ -83,6 +86,73 @@
     		userName  = "Katze";
     		userEmail = "googletan@mail.ru";
   	};
+
+	programs.neovim = {
+      enable = true;
+      plugins = with pkgs.vimPlugins; [
+        nvim-lspconfig
+        # Add other plugins as needed, e.g., for completion or UI
+        nvim-cmp
+        cmp-nvim-lsp
+        cmp-buffer
+        cmp-path
+        cmp-cmdline
+	haskell-tools-nvim
+	luasnip
+      ];
+      extraConfig = ''
+        lua << EOF
+          -- Setup LSPs
+          local lspconfig = require('lspconfig')
+
+          -- Idris2 LSP
+          lspconfig.idris2.setup {
+            cmd = { "${pkgs.idris2}/bin/idris2", "--lsp" }
+          }
+
+          -- Haskell LSP
+	  require('haskell-tools').setup {
+	    hls = {
+              cmd = { "${pkgs.haskell-language-server}/bin/haskell-language-server-wrapper", "--lsp" },
+              filetypes = { "haskell", "lhaskell" }
+	    }
+          }
+
+          -- Nix LSP
+          lspconfig.nil_ls.setup {
+            cmd = { "${pkgs.nil}/bin/nil" },
+            settings = {
+              nix = {
+                flake = {
+                  autoArchive = true
+                }
+              }
+            }
+          }
+
+          -- Optional: Setup autocompletion with nvim-cmp
+          local cmp = require('cmp')
+          cmp.setup {
+            snippet = {
+              expand = function(args)
+                require('luasnip').lsp_expand(args.body) -- If using luasnip
+              end,
+            },
+            mapping = cmp.mapping.preset.insert({
+              ['<C-b>'] = cmp.mapping.scroll_docs(-4),
+              ['<C-f>'] = cmp.mapping.scroll_docs(4),
+              ['<C-Space>'] = cmp.mapping.complete(),
+              ['<C-e>'] = cmp.mapping.abort(),
+              ['<CR>'] = cmp.mapping.confirm({ select = true }),
+            }),
+            sources = cmp.config.sources({
+              { name = 'nvim_lsp' },
+              { name = 'buffer' },
+              { name = 'path' },
+            })
+          }
+      '';
+      };
   };
 
   # Enable automatic login for the user.
@@ -113,10 +183,11 @@
        withVencord = true;
      })
      jetbrains.idea-ultimate
+     keepass
 
      heroic
+     modrinth-app
 
-     neovim
      ghostty
      firefox
      nautilus
@@ -147,6 +218,7 @@
 
      #java
      zulu17
+     zulu21
      
      gnome-system-monitor
 
@@ -154,8 +226,6 @@
 
      yarn
      sbt
-
-     docker
 
      ffmpeg
 
@@ -165,12 +235,19 @@
 
      docker
      kubernetes
+
+     krita
+
    ];
 
   services.xserver.videoDrivers = lib.mkDefault ["modesetting"];
   hardware.amdgpu.initrd.enable = lib.mkDefault true;
   hardware.graphics.enable = true;
   hardware.graphics.enable32Bit = true;
+
+  swapDevices = [
+  	{ device = "/swapfile"; }
+  ];
 
   # This value determines the NixOS release from which the default
   # settings for stateful data, like file locations and database versions
