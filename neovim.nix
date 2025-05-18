@@ -1,46 +1,69 @@
-{ config, lib, pkgs, ... }:
+{ config, lib, pkgs, ... }: {
+	home-manager.users.zahara = { pkgs, ... }: {
+		programs.neovim = {
+		      enable = true;
+		      plugins = with pkgs.vimPlugins; [
+			nvim-lspconfig
+			nvim-cmp
+			cmp-nvim-lsp
+			cmp-buffer
+			cmp-path
+			cmp-cmdline
+			haskell-tools-nvim
+			luasnip
+		      ];
+		      extraConfig = ''
+			lua << EOF
+			  -- Setup LSPs
+			  local lspconfig = require('lspconfig')
 
-let
-  cfg = config.programs.neovim.lsp;
-in
-{
-  options.programs.neovim.lsp = {
-    idris2 = {
-      enable = lib.mkEnableOption "Idris2 LSP support";
-    };
-    haskell = {
-      enable = lib.mkEnableOption "Haskell LSP support";
-    };
-    nix = {
-      enable = lib.mkEnableOption "Nix LSP support";
-    };
-  };
+			  -- Idris2 LSP
+			  lspconfig.idris2.setup {
+			    cmd = { "${pkgs.idris2}/bin/idris2", "--lsp" }
+			  }
 
-	config = {
-    programs.neovim = {
-			plugins = with pkgs.vimPlugins; [
-				nvim-lspconfig
-        {
-          plugin = nvim-lspconfig; # The LSP configuration plugin
-          config = ''
-            lua << EOF
-              -- Setup Idris2 LSP if enabled
-              ${lib.optionalString cfg.idris2.enable ''
-                require('lspconfig').idris2.setup{
-                  cmd = { "${pkgs.idris2}/bin/idris2", "--lsp" }
-                }
-              ''}
+			  -- Haskell LSP
+			  require('haskell-tools').setup {
+			    hls = {
+			      cmd = { "${pkgs.haskell-language-server}/bin/haskell-language-server-wrapper", "--lsp" },
+			      filetypes = { "haskell", "lhaskell" }
+			    }
+			  }
 
-              -- Setup Haskell LSP if enabled
-              ${lib.optionalString cfg.haskell.enable ''
-                require('lspconfig').hls.setup{
-                  cmd = { "${pkgs.haskell-language-server}/bin/haskell-language-server-wrapper", "--lsp" }
-                }
-              ''}
-            EOF
-          '';
-        }
-      ];
-    };
+			  -- Nix LSP
+			  lspconfig.nil_ls.setup {
+			    cmd = { "${pkgs.nil}/bin/nil" },
+			    settings = {
+			      nix = {
+				flake = {
+				  autoArchive = true
+				}
+			      }
+			    }
+			  }
+
+			  -- Optional: Setup autocompletion with nvim-cmp
+			  local cmp = require('cmp')
+			  cmp.setup {
+			    snippet = {
+			      expand = function(args)
+				require('luasnip').lsp_expand(args.body) -- If using luasnip
+			      end,
+			    },
+			    mapping = cmp.mapping.preset.insert({
+			      ['<C-b>'] = cmp.mapping.scroll_docs(-4),
+			      ['<C-f>'] = cmp.mapping.scroll_docs(4),
+			      ['<C-Space>'] = cmp.mapping.complete(),
+			      ['<C-e>'] = cmp.mapping.abort(),
+			      ['<CR>'] = cmp.mapping.confirm({ select = true }),
+			    }),
+			    sources = cmp.config.sources({
+			      { name = 'nvim_lsp' },
+			      { name = 'buffer' },
+			      { name = 'path' },
+			    })
+			  }
+		      '';
+	      };
 	};
 }

@@ -5,6 +5,8 @@
 			nil
 			sbt
 			metals
+			tinymist  # Replaced typst-lsp with tinymist
+			typst
 		];
 		programs.emacs = {
 		  enable = true;
@@ -14,13 +16,21 @@
 			epkgs.intellij-theme
 			epkgs.lsp-mode
     		    	epkgs.lsp-ui
-    		    	epkgs.company  # Optional: for autocompletion
-		    	epkgs.scala-mode # Add scala-mode for syntax highlighting
-        		epkgs.lsp-metals    # Add Metals for Scala LSP support
-			epkgs.sbt-mode  # For sbt build file support
+    		    	epkgs.company
+		    	epkgs.scala-mode
+        		epkgs.lsp-metals
+			epkgs.sbt-mode
 			epkgs.treemacs
-			epkgs.treemacs-projectile # Optional: for projectile integration
-			epkgs.projectile # Add projectile
+			epkgs.treemacs-projectile
+			epkgs.projectile
+			epkgs.markdown-mode
+			epkgs.org-modern
+			epkgs.auctex
+			epkgs.json-mode
+			epkgs.yaml-mode
+			epkgs.toml-mode
+			epkgs.typst-mode
+			epkgs.pdf-tools
 		  ];
 		  extraConfig = let 
 			scalaVersion = "3.7.0";
@@ -31,55 +41,108 @@
 			(menu-bar-mode -1)
 			(scroll-bar-mode -1)
 
-		    	;; Enable lsp-mode
+			;; Enable lsp-mode
 			(require 'lsp-mode)
 			(add-hook 'nix-mode-hook #'lsp)
-			(add-hook 'scala-mode-hook #'lsp) ; Enable LSP for Scala files
+			(add-hook 'scala-mode-hook #'lsp)
 
 			;; Configure Metals for Scala
         		(require 'lsp-metals)
         		(setq lsp-metals-server-command "${pkgs.metals}/bin/metals-emacs")
-        		(setq lsp-metals-scala-version "${scalaVersion}") ; Specify Scala 3 version (adjust as needed)
+        		(setq lsp-metals-scala-version "${scalaVersion}")
 
-			 ;; Configure sbt-mode
+			;; Configure sbt-mode
 			(require 'sbt-mode)
-			(add-hook 'sbt-mode-hook #'company-mode) ; Enable autocompletion in sbt files
+			(add-hook 'sbt-mode-hook #'company-mode)
 	
-			;; Optional: Configure lsp-ui for better visuals
+			;; Configure lsp-ui
 			(require 'lsp-ui)
 			(setq lsp-ui-sideline-enable t
 			      lsp-ui-doc-enable t)
 
-			;; Optional: Enable company for autocompletion
+			;; Enable company
 			(require 'company)
 			(add-hook 'nix-mode-hook #'company-mode)
-        		(add-hook 'scala-mode-hook #'company-mode) ; Enable company for Scala
+        		(add-hook 'scala-mode-hook #'company-mode)
 
-			(setq gc-cons-threshold 100000000) ;; For lsp
+			(setq gc-cons-threshold 100000000)
 			(setq lsp-idle-delay 0.500)
 			(setq company-minimum-prefix-length 1
-      			      company-idle-delay 0.0) ;; default is 0.2
+      			      company-idle-delay 0.0)
 
-			(projectile-mode +1) ;; Enable projectile globally
+			(projectile-mode +1)
 
 			;; Treemacs configuration
 			(require 'treemacs)
-			(global-set-key (kbd "C-x t t") 'treemacs) ; Bind treemacs toggle to C-x t t
-			(setq treemacs-is-never-other-window t) ; Prevent treemacs from being selected
-			(setq treemacs-width 35) ; Set treemacs sidebar width
-			(setq treemacs-follow-mode t) ; Follow the current file in treemacs
-			(setq treemacs-filewatch-mode t) ; Auto-refresh treemacs on file changes
-			(setq treemacs-project-follow-mode t) ; Auto-switch to project root
+			(global-set-key (kbd "C-x t t") 'treemacs)
+			(setq treemacs-is-never-other-window t)
+			(setq treemacs-width 35)
+			(setq treemacs-follow-mode t)
+			(setq treemacs-filewatch-mode t)
+			(setq treemacs-project-follow-mode t)
 
-			;; Automatically open treemacs when entering a project
 			(add-hook 'projectile-mode-hook
 				  (lambda ()
 				    (when (and (boundp 'projectile-mode) projectile-mode)
 				      (treemacs))))
-			;; Optional: Integrate with projectile if you use it
 			(require 'treemacs-projectile)
+
+			;; Markdown configuration
+			(require 'markdown-mode)
+			(add-hook 'markdown-mode-hook #'company-mode)
+
+			;; Org-mode configuration
+			(require 'org-modern)
+			(add-hook 'org-mode-hook #'org-modern-mode)
+			(add-hook 'org-mode-hook #'company-mode)
+
+			;; LaTeX configuration
+			(require 'auctex)
+			(setq TeX-auto-save t)
+			(setq TeX-parse-self t)
+			(add-hook 'LaTeX-mode-hook #'company-mode)
+
+			;; JSON configuration
+			(require 'json-mode)
+			(add-hook 'json-mode-hook #'company-mode)
+			(add-hook 'json-mode-hook #'lsp)
+
+			;; YAML configuration
+			(require 'yaml-mode)
+			(add-hook 'yaml-mode-hook #'company-mode)
+			(add-hook 'yaml-mode-hook #'lsp)
+
+			;; TOML configuration
+			(require 'toml-mode)
+			(add-hook 'toml-mode-hook #'company-mode)
+
+			;; Typst configuration
+			(require 'typst-mode)
+			(add-hook 'typst-mode-hook #'company-mode)
+			(add-hook 'typst-mode-hook #'lsp)
+			(setq lsp-typst-server "${pkgs.tinymist}/bin/tinymist")  # Updated to use tinymist
+
+			;; PDF Tools configuration
+			(require 'pdf-tools)
+			(pdf-tools-install)
+
+			;; Typst preview with pdf-tools
+			(defun typst-start-watch ()
+			  "Start typst watch for the current Typst file and open in pdf-tools."
+			  (interactive)
+			  (let ((file (buffer-file-name))
+				(output (concat (file-name-sans-extension (buffer-file-name)) ".pdf")))
+			    (when (and file (string-match "\\.typ$" file))
+			      (start-process "typst-watch" nil
+					     "${pkgs.typst}/bin/typst"
+					     "watch" file output)
+			      (find-file output))))
+			(add-hook 'typst-mode-hook
+				  (lambda ()
+				    (local-set-key (kbd "C-c C-p") #'typst-start-watch)))
 
 		  '';
 		};
 	};
 }
+

@@ -9,19 +9,13 @@
       ./vpn.nix
       ./hyprland.nix
       ./waybar.nix
-      ./kuber.nix
       ./zen.nix
       ./tablet_drivers.nix
-      #./neovim.nix
-      ./emacs.nix
+      ./neovim.nix
+      ./emacs/newEmacs.nix
     ];
 
-  virtualisation.virtualbox.host.enable = true;
-  users.extraGroups.vboxusers.members = [ "Zahara" ]; # Replace with your actual username
-  virtualisation.virtualbox.host.enableExtensionPack = false; # Optional, set to true if you need USB support, etc.
-
   programs.ssh.startAgent = true;
-  virtualisation.docker.enable = true;
 
   # Bootloader.
   boot.loader.grub.enable = true;
@@ -73,86 +67,20 @@
 
   home-manager.backupFileExtension = "backup";
   home-manager.users.zahara = { pkgs, ... }: {
+  	imports = [  
+		./hyprland-config.nix
+	];
   	home.packages = [ pkgs.atool pkgs.httpie ];
   	programs.bash.enable = true;
 
   	# The state version is required and should stay at the version you
   	# originally installed.
   	home.stateVersion = "24.11";
-  	home.sessionVariables.GTK_THEME = "graphite";
-
   	programs.git = {
     		enable = true;
     		userName  = "Katze";
     		userEmail = "googletan@mail.ru";
   	};
-
-	programs.neovim = {
-      enable = true;
-      plugins = with pkgs.vimPlugins; [
-        nvim-lspconfig
-        # Add other plugins as needed, e.g., for completion or UI
-        nvim-cmp
-        cmp-nvim-lsp
-        cmp-buffer
-        cmp-path
-        cmp-cmdline
-	haskell-tools-nvim
-	luasnip
-      ];
-      extraConfig = ''
-        lua << EOF
-          -- Setup LSPs
-          local lspconfig = require('lspconfig')
-
-          -- Idris2 LSP
-          lspconfig.idris2.setup {
-            cmd = { "${pkgs.idris2}/bin/idris2", "--lsp" }
-          }
-
-          -- Haskell LSP
-	  require('haskell-tools').setup {
-	    hls = {
-              cmd = { "${pkgs.haskell-language-server}/bin/haskell-language-server-wrapper", "--lsp" },
-              filetypes = { "haskell", "lhaskell" }
-	    }
-          }
-
-          -- Nix LSP
-          lspconfig.nil_ls.setup {
-            cmd = { "${pkgs.nil}/bin/nil" },
-            settings = {
-              nix = {
-                flake = {
-                  autoArchive = true
-                }
-              }
-            }
-          }
-
-          -- Optional: Setup autocompletion with nvim-cmp
-          local cmp = require('cmp')
-          cmp.setup {
-            snippet = {
-              expand = function(args)
-                require('luasnip').lsp_expand(args.body) -- If using luasnip
-              end,
-            },
-            mapping = cmp.mapping.preset.insert({
-              ['<C-b>'] = cmp.mapping.scroll_docs(-4),
-              ['<C-f>'] = cmp.mapping.scroll_docs(4),
-              ['<C-Space>'] = cmp.mapping.complete(),
-              ['<C-e>'] = cmp.mapping.abort(),
-              ['<CR>'] = cmp.mapping.confirm({ select = true }),
-            }),
-            sources = cmp.config.sources({
-              { name = 'nvim_lsp' },
-              { name = 'buffer' },
-              { name = 'path' },
-            })
-          }
-      '';
-      };
   };
 
   # Enable automatic login for the user.
@@ -172,11 +100,8 @@
      vlc
      unzip
      unrar
-     virtualbox
      jetbrains.pycharm-community
-     jetbrains.pycharm-professional
-     python312
-     python312Packages.jupyter-core
+     jetbrains.idea-community-bin
 
      vesktop
      (discord.override {
@@ -196,15 +121,12 @@
 
      rofi-wayland # app launcher.
 
-     python314
-
      telegram-desktop
      
      grim
      slurp
      wl-clipboard
      
-     jetbrains.idea-community-bin
 
      loupe # image viewer
 
@@ -230,14 +152,11 @@
      ffmpeg
 
      torrential
-     isoimagewriter
-     obsidian
 
      docker
      kubernetes
 
      krita
-
    ];
 
   services.xserver.videoDrivers = lib.mkDefault ["modesetting"];
