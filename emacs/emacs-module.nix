@@ -34,9 +34,12 @@ in
   config = {
     programs.emacs = {
       enable = true;
+      package = pkgs.emacs-gtk;
       extraPackages = epkgs: lib.concatMap (unit: unit.emacsPackages epkgs) config.emacsConfigUnits;
       extraConfig = lib.concatStringsSep "\n" (map (unit: unit.configText) config.emacsConfigUnits);
     };
-    home.packages = lib.concatMap (unit: unit.nixPackages) config.emacsConfigUnits;
+    home.packages = with pkgs; [
+    	librsvg
+    ] ++ lib.concatMap (unit: unit.nixPackages) config.emacsConfigUnits;
   };
 }
