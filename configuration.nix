@@ -12,7 +12,6 @@
       ./zen.nix
       ./tablet_drivers.nix
       ./neovim.nix
-      ./emacs/newEmacs.nix
     ];
 
   programs.ssh.startAgent = true;
@@ -69,6 +68,7 @@
   home-manager.users.zahara = { pkgs, ... }: {
   	imports = [  
 		./hyprland-config.nix
+      		./emacs/newEmacs.nix
 	];
   	home.packages = [ pkgs.atool pkgs.httpie ];
   	programs.bash.enable = true;
