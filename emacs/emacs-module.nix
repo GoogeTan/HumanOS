@@ -34,7 +34,7 @@ in
   config = {
     programs.emacs = {
       enable = true;
-      package = pkgs.emacs-gtk;
+      package = pkgs.emacs;
       extraPackages = epkgs: lib.concatMap (unit: unit.emacsPackages epkgs) config.emacsConfigUnits;
       extraConfig = lib.concatStringsSep "\n" (map (unit: unit.configText) config.emacsConfigUnits);
     };
