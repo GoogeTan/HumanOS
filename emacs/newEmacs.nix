@@ -66,9 +66,30 @@ let
   projectConfig = {
     nixPackages = [];
     emacsPackages = epkgs: [ epkgs.projectile epkgs.treemacs epkgs.treemacs-projectile ];
-    configText = ''
+    configText = let
+    	       # Path to the icons directory
+  	       iconsDir = ./icon;
+  	       folderIcon = "${iconsDir}/folder/folder.svg";
+  	       homeFolderIcon = "${iconsDir}/homeFolder/homeFolder.svg";
+      in ''
       (projectile-mode +1)
       (require 'treemacs)
+
+      ;; set icons
+
+      (use-package treemacs
+      :config
+      ;; Load Treemacs icon definitions
+      (treemacs-create-icon
+       :file (format "%s " "${folderIcon}")
+       :extensions (dir-closed))
+      (treemacs-create-icon
+       :file (format "%s " "${folderIcon}")
+       :extensions (dir-open))
+      (treemacs-create-icon
+       :file (format "%s " "${homeFolderIcon}")
+       :extensions (root)))
+
       (global-set-key (kbd "C-x t t") 'treemacs)
       (setq treemacs-is-never-other-window t)
       (setq treemacs-width 35)
@@ -80,6 +101,8 @@ let
                   (when (and (boundp 'projectile-mode) projectile-mode)
                     (treemacs))))
       (require 'treemacs-projectile)
+
+      
     '';
   };
 
@@ -186,26 +209,46 @@ let
         (setq forge-add-default-bindings t)
       '';
    };
+
+   sudoReopen = {
+	configText = ''
+		(defun reopen-file-with-sudo ()
+			"Reopen the current file with sudo privileges."
+			(interactive)
+			(let ((file-name (buffer-file-name)))
+		    	(if file-name
+		 		(progn
+			  		(kill-buffer (current-buffer))
+		 	  		(find-file (concat "/sudo::" file-name)))
+		      		(message "Buffer is not visiting a file"))))
+		
+		(global-set-key (kbd "C-x C-!") 'reopen-file-with-sudo)
+	'';
+   };
+
+   testSvgSupport = {
+	configText = ''(message "SVG support: %s" (image-type-available-p 'svg))'';
+   };
 in
 {
-  home-manager.users.zahara = { pkgs, ... }: {
-    imports = [ ./emacs-module.nix ];
-    emacsConfigUnits = [
-      (uiConfig { theme = "chyla"; themePackage = "chyla-theme"; })
-      (fontConfig { family = "JetBrains Mono"; size = 12; fontPackage = pkgs.jetbrains-mono; })
-      lspBaseConfig
-      (languageLspConfig { mode = "nix"; nixPackages = [ pkgs.nil ]; })
-      (scalaConfig { scalaVersion = "3.7.0"; })
-      projectConfig
-      markdownConfig
-      orgConfig
-      latexConfig
-      jsonConfig
-      yamlConfig
-      tomlConfig
-      typstConfig
-      pdfToolsConfig
-    ];
-  };
+  imports = [ ./emacs-module.nix ];
+  emacsConfigUnits = [
+    (uiConfig { theme = "chyla"; themePackage = "chyla-theme"; })
+    (fontConfig { family = "JetBrains Mono"; size = 12; fontPackage = pkgs.jetbrains-mono; })
+    lspBaseConfig
+    (languageLspConfig { mode = "nix"; nixPackages = [ pkgs.nil ]; })
+    (scalaConfig { scalaVersion = "3.7.0"; })
+    projectConfig
+    markdownConfig
+    orgConfig
+    latexConfig
+    jsonConfig
+    yamlConfig
+    tomlConfig
+    typstConfig
+    pdfToolsConfig
+    sudoReopen
+    testSvgSupport
+  ];
 }
 
