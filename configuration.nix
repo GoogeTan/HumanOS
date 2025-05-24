@@ -7,11 +7,12 @@
       <home-manager/nixos>
       ./zerotier.nix
       ./vpn.nix
-      ./hyprland.nix
       ./waybar.nix
       ./zen.nix
       ./tablet_drivers.nix
       ./neovim.nix
+      #./matrix.nix
+      #./coturn.nix
     ];
 
   programs.ssh.startAgent = true;
@@ -20,6 +21,8 @@
   boot.loader.grub.enable = true;
   boot.loader.grub.device = "/dev/nvme0n1";
   boot.loader.grub.useOSProber = true;
+
+  programs.dconf.enable = true;
 
   networking.hostName = "nixos"; # Define your hostname.
   # networking.wireless.enable = true;  # Enables wireless support via wpa_supplicant.
@@ -67,8 +70,9 @@
   home-manager.backupFileExtension = "backup";
   home-manager.users.zahara = { pkgs, ... }: {
   	imports = [  
-		./hyprland-config.nix
-      		./emacs/newEmacs.nix
+		./home-modules/hyprland.nix
+		./home-modules/gtk.nix
+      	./home-modules/emacs/newEmacs.nix
 	];
   	home.packages = [ pkgs.atool pkgs.httpie ];
   	programs.bash.enable = true;
@@ -102,6 +106,7 @@
      unrar
      jetbrains.pycharm-community
      jetbrains.idea-community-bin
+     pipewire
 
      vesktop
      (discord.override {
